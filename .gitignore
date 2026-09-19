@@ -1,0 +1,7 @@
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+.env
+assets/reference_voice.wav
+dist/

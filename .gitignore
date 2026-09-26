@@ -5,3 +5,8 @@ __pycache__/
 .env
 assets/reference_voice.wav
 dist/
+
+venv/
+__pycache__/
+*.pyc
+.env

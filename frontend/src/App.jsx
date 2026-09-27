@@ -34,6 +34,38 @@ export default function App() {
       <h1 style={{ marginBottom: 4 }}>Auralis</h1>
       <p style={{ opacity: 0.7, marginTop: 0 }}>Crisis Negotiation Training Simulator</p>
 
+<div
+  style={{
+    marginTop: 16,
+    padding: 14,
+    borderRadius: 10,
+    background: "#202331",
+    border: "1px solid #303545",
+  }}
+>
+  <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>
+    Live Session Status
+  </div>
+
+  <div style={{ display: "flex", gap: 18, flexWrap: "wrap", fontSize: 13 }}>
+    <span>
+      Connection: <strong>{connected ? "Connected" : "Disconnected"}</strong>
+    </span>
+
+    <span>
+      AI: <strong>{aiSpeaking ? "Speaking" : "Listening"}</strong>
+    </span>
+
+    <span>
+      Emotion: <strong>{emotion ? "Detected" : "Waiting"}</strong>
+    </span>
+  </div>
+
+  <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
+    {status || "Ready to start a voice session"}
+  </div>
+</div>
+
       <AudioRecorder
         connected={connected}
         status={status}
@@ -67,3 +99,4 @@ export default function App() {
     </div>
   );
 }
+

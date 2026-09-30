@@ -57,8 +57,13 @@ export default function App() {
     </span>
 
     <span>
-      Emotion: <strong>{emotion ? "Detected" : "Waiting"}</strong>
-    </span>
+  Emotion:{" "}
+  <strong>
+    {emotion?.emotion
+      ? `${emotion.emotion} (${emotion.arousal?.toFixed?.(2) ?? "N/A"})`
+      : "Waiting"}
+  </strong>
+</span>
   </div>
 
   <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>

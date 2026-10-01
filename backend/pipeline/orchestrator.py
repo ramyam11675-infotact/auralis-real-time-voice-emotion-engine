@@ -65,6 +65,12 @@ class ConversationOrchestrator:
     async def handle_frame(self, frame: np.ndarray):
         """Called by the WebRTC gateway for every ~20ms incoming audio frame."""
         vad_state = self.vad.update(frame)
+        logger.info(
+    f"VAD prob={vad_state['prob']:.3f} "
+    f"speaking={vad_state['speaking']} "
+    f"started={vad_state['turn_started']} "
+    f"ended={vad_state['turn_ended']}"
+)
 
         # --- Barge-in: user started talking while AI is speaking ---
         if vad_state["turn_started"] and self.tts_player.is_speaking:

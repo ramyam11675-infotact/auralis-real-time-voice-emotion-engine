@@ -128,6 +128,8 @@ class AuralisPeerConnection:
                 await self._on_incoming_frame(pcm)
         except MediaStreamError:
             logger.info("Incoming audio track ended.")
+        except Exception:
+            logger.exception("Incoming audio processing failed")
 
     async def handle_offer(self, sdp: str, type_: str) -> RTCSessionDescription:
         offer = RTCSessionDescription(sdp=sdp, type=type_)

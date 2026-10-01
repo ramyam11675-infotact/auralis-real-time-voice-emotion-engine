@@ -18,70 +18,98 @@ from backend.config import settings
 
 class SileroVAD:
     """
-    Thin async-friendly wrapper around torch.hub's Silero VAD model.
-
-    Usage:
-        vad = SileroVAD()
-        for frame in audio_stream:               # frame: float32 np.array, 16kHz
-            is_speech = vad.is_speech(frame)
-            turn_ended = vad.update(is_speech)
-            if turn_ended:
-                ...  # trigger orchestrator turn
+    Silero VAD wrapper that buffers incoming audio frames to the
+    512-sample window required by the 16kHz Silero model.
     """
 
     def __init__(self):
         logger.info("Loading Silero VAD model...")
+
         self.model, utils = torch.hub.load(
             repo_or_dir="snakers4/silero-vad",
             model="silero_vad",
             force_reload=False,
-            onnx=True,  # faster CPU inference
+            onnx=True,
         )
+
         (self.get_speech_timestamps, *_rest) = utils
 
         self._speech_start_ts: float | None = None
         self._last_speech_ts: float | None = None
         self._in_speech = False
 
+        # Silero VAD requires exactly 512 samples at 16kHz.
+        self._vad_frame_size = 512
+        self._vad_buffer = np.zeros(0, dtype=np.float32)
+
     def is_speech(self, frame: np.ndarray) -> float:
-        """Return the raw speech probability [0, 1] for a single audio frame."""
+        """Return the raw speech probability [0, 1]."""
+
         tensor = torch.from_numpy(frame).float()
+
         with torch.no_grad():
             prob = self.model(tensor, settings.sample_rate).item()
+
         return prob
 
     def update(self, frame: np.ndarray) -> dict:
         """
-        Feed one frame, update internal speech/silence state machine, and
-        return a dict describing what happened this frame:
+        Feed incoming audio into the VAD.
 
-            {
-              "prob": float,
-              "speaking": bool,          # currently inside a speech segment
-              "turn_started": bool,      # speech just started (barge-in signal)
-              "turn_ended": bool,        # enough trailing silence to end the turn
-            }
+        WebRTC may provide 640-sample frames, while Silero requires
+        512 samples at 16kHz. Buffer incoming samples and process
+        complete 512-sample windows.
         """
-        now = time.monotonic()
-        prob = self.is_speech(frame)
+
+        self._vad_buffer = np.concatenate(
+            [self._vad_buffer, frame.astype(np.float32)]
+        )
+
+        probabilities = []
+
+        while len(self._vad_buffer) >= self._vad_frame_size:
+            vad_frame = self._vad_buffer[:self._vad_frame_size]
+            self._vad_buffer = self._vad_buffer[self._vad_frame_size:]
+
+            probabilities.append(self.is_speech(vad_frame))
+
+        # Not enough audio for one Silero window yet.
+        if not probabilities:
+            return {
+                "prob": 0.0,
+                "speaking": self._in_speech,
+                "turn_started": False,
+                "turn_ended": False,
+            }
+
+        prob = max(probabilities)
         is_speech_frame = prob >= settings.vad_threshold
+
+        now = time.monotonic()
 
         turn_started = False
         turn_ended = False
 
         if is_speech_frame:
             self._last_speech_ts = now
+
             if not self._in_speech:
                 self._speech_start_ts = now
                 self._in_speech = True
                 turn_started = True
+
         else:
             if self._in_speech and self._last_speech_ts is not None:
                 silence_ms = (now - self._last_speech_ts) * 1000
+
                 if silence_ms >= settings.vad_min_silence_ms:
-                    speech_duration_ms = (self._last_speech_ts - self._speech_start_ts) * 1000
+                    speech_duration_ms = (
+                        self._last_speech_ts - self._speech_start_ts
+                    ) * 1000
+
                     if speech_duration_ms >= settings.vad_min_speech_ms:
                         turn_ended = True
+
                     self._in_speech = False
                     self._speech_start_ts = None
 
@@ -96,3 +124,4 @@ class SileroVAD:
         self._speech_start_ts = None
         self._last_speech_ts = None
         self._in_speech = False
+        self._vad_buffer = np.zeros(0, dtype=np.float32)

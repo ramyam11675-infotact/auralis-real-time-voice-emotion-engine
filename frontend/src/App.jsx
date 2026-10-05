@@ -18,6 +18,14 @@ export default function App() {
     remoteAudioRef,
     localStream,
   } = useWebRTC({ backendUrl: BACKEND_URL });
+  const sessionStatus =
+    status === "connecting"
+      ? "Connecting"
+      : status === "error"
+        ? "Connection Error"
+        : connected
+          ? "Connected"
+          : "Ready";
 
   return (
     <div
@@ -67,7 +75,7 @@ export default function App() {
   </div>
 
   <div style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
-    {status || "Ready to start a voice session"}
+        {sessionStatus}
   </div>
 </div>
 

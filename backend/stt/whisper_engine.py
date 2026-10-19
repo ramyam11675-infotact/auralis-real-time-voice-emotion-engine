@@ -53,7 +53,7 @@ class WhisperSTTEngine:
             language="en",
             beam_size=settings.whisper_beam_size,
             vad_filter=False,  # VAD is handled upstream by Silero for turn-taking
-            condition_on_previous_text=True,
+            condition_on_previous_text=False,
             word_timestamps=False,
         )
 

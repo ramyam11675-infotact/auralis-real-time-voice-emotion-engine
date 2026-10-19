@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     audio_channels: int = 1
 
     # --- STT (Week 1 target: < 200ms partial transcript) ---
-    whisper_model: str = "small.en"   # tiny.en/base.en for even lower latency
+    whisper_model: str = "base.en"   # tiny.en/base.en for even lower latency
     whisper_device: str = "cpu"       # "cuda" if GPU available
     whisper_compute_type: str = "int8"  # int8 quantization for CPU speed
     whisper_beam_size: int = 1        # greedy decoding = fastest

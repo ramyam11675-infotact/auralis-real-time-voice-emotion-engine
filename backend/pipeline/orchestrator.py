@@ -106,6 +106,7 @@ class ConversationOrchestrator:
             )
 
             transcript = transcript_result.text
+            logger.info(f"RECOGNIZED TRANSCRIPT: {transcript!r}")
             if not transcript:
                 logger.debug("Empty transcript, skipping turn.")
                 return
